@@ -21,7 +21,7 @@ from common import *
 @cocotb.test()
 async def aplic_write_read_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
   # Apply reset
   dut.reset.value = 1
   for _ in range(10):
@@ -79,7 +79,7 @@ async def aplic_write_read_test(dut):
 @cocotb.test()
 async def aplic_set_clr_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
 
   # setienum 0, which should be ignored
   ie0 = await a_get32(dut, aplic_m_base_addr+offset_seties)
@@ -119,13 +119,13 @@ async def aplic_set_clr_test(dut):
 @cocotb.test()
 async def aplic_triggered_int_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
 
   # int sources
   async def expect_intSrcsTriggered_2(dut, value):
     for _ in range(10):
       await RisingEdge(dut.clock)
-      if dut.aplic.aplic.domains_0.intSrcsTriggered_2 == value:
+      if dut.aplic.aplic.domains_0.intSrcsTriggered_2.value == value:
         break
     else:
       assert False, f"Timeout waiting for dut.aplic.intSrcsTriggered_2"
@@ -134,7 +134,7 @@ async def aplic_triggered_int_test(dut):
   await a_put_full32(dut, aplic_m_base_addr+offset_sourcecfg+1*4, sourcecfg_sm_edge1)
   await FallingEdge(dut.clock)
   dut.intSrcs_2.value = 0
-  assert dut.aplic.aplic.domains_0.intSrcsTriggered_2 == 0
+  assert dut.aplic.aplic.domains_0.intSrcsTriggered_2.value == 0
   await FallingEdge(dut.clock)
   dut.intSrcs_2.value = 1
   await expect_intSrcsTriggered_2(dut, 1)
@@ -160,7 +160,7 @@ async def aplic_triggered_int_test(dut):
 @cocotb.test()
 async def aplic_in_clrips_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
 
   await a_put_full32(dut, aplic_m_base_addr+offset_seties, 0)
   rect_before = await a_get32(dut, aplic_m_base_addr+offset_in_clrips+0*4)
@@ -196,13 +196,13 @@ async def aplic_in_clrips_test(dut):
 @cocotb.test()
 async def aplic_msi_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
 
   async def expect_int_num(dut, num, addr):
     for _ in range(0,10):
       await RisingEdge(dut.clock)
-      if dut.aplic.auto_toIMSIC_out_a_bits_data == num:
-        assert dut.aplic.auto_toIMSIC_out_a_bits_address == addr
+      if dut.aplic.auto_toIMSIC_out_a_bits_data.value == num:
+        assert dut.aplic.auto_toIMSIC_out_a_bits_address.value == addr
         break
     else:
       assert False, f"Timeout waiting for dut.aplic.auto_toIMSIC_out_a_bits_data"

@@ -21,7 +21,7 @@ from common import *
 @cocotb.test()
 async def integration_simple_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
   # Apply reset
   dut.reset.value = 1
   for _ in range(10):
