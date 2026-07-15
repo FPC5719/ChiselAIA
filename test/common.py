@@ -34,7 +34,7 @@ op_access_ack = 0
 op_access_ack_data = 1
 async def a_op(dut, addr, data, op, mask, size) -> None:
   await FallingEdge(dut.clock)
-  while not dut.toaia_0_a_ready:
+  while not int(dut.toaia_0_a_ready.value):
     await FallingEdge(dut.clock)
   dut.toaia_0_a_valid.value = 1
   dut.toaia_0_a_bits_opcode.value = op
@@ -56,7 +56,7 @@ async def a_put_full32(dut, addr, data) -> None:
   await a_op32(dut, addr, data, op_put_full)
   for _ in range(10):
     await RisingEdge(dut.clock)
-    if dut.toaia_0_d_bits_opcode == op_access_ack and dut.toaia_0_d_valid == 1:
+    if dut.toaia_0_d_bits_opcode.value == op_access_ack and dut.toaia_0_d_valid.value == 1:
       break
   else:
     assert False, f"Timeout waiting for op_access_ack"
@@ -64,11 +64,11 @@ async def a_get32(dut, addr) -> int:
   await a_op32(dut, addr, 0, op_get)
   for _ in range(10):
     await RisingEdge(dut.clock)
-    if dut.toaia_0_d_bits_opcode == op_access_ack_data and dut.toaia_0_d_valid == 1:
+    if dut.toaia_0_d_bits_opcode.value == op_access_ack_data and dut.toaia_0_d_valid.value == 1:
       break
   else:
     assert False, f"Timeout waiting for op_access_ack_data"
-  odata = int(dut.toaia_0_d_bits_data)
+  odata = int(dut.toaia_0_d_bits_data.value)
   res = odata if addr%4==0 else odata>>32
   return res & 0xffffffff
 
@@ -81,7 +81,7 @@ async def interrupt(dut, i):
   if EnableImsicAsyncBridge ==1 :
     for _ in range(15):
       await FallingEdge(dut.clock)
-      if dut.toCSR0_topeis_0 == wrap_topei(i):
+      if dut.toCSR0_topeis_0.value == wrap_topei(i):
         break
     else:
       assert False, f"Timeout waiting for toCSR0_topeis_0 == wrap_topei({i})"
@@ -89,7 +89,7 @@ async def interrupt(dut, i):
     for _ in range(10):
       await FallingEdge(dut.clock)
       await FallingEdge(dut.clock)
-      if dut.toCSR0_topeis_0 == wrap_topei(i):
+      if dut.toCSR0_topeis_0.value == wrap_topei(i):
         break
     else:
       assert False, f"Timeout waiting for toCSR0_topeis_0 == wrap_topei({i})"

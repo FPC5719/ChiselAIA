@@ -26,11 +26,11 @@ async def axi4_aw_send(dut, addr, prot, size):
   dut.toaia_0_b_valid.value = 1
   # TODO: why need this? how to use axi4lite?
   dut.toaia_0_aw_bits_size.value = size
-  while not dut.toaia_0_aw_ready.value:
+  while not int(dut.toaia_0_aw_ready.value):
     await FallingEdge(dut.clock)
   await FallingEdge(dut.clock)
   dut.toaia_0_aw_valid.value = 0
-  
+   
 async def axi4_w_send(dut, data, strb):
   await FallingEdge(dut.clock)
   # As AXI4RegMapperNode only receives a & w within same cycle
@@ -39,7 +39,7 @@ async def axi4_w_send(dut, data, strb):
   dut.toaia_0_w_bits_last.value = 1
   dut.toaia_0_w_bits_data.value = data
   dut.toaia_0_w_bits_strb.value = strb
-  while not dut.toaia_0_aw_ready.value:
+  while not int(dut.toaia_0_aw_ready.value):
     await FallingEdge(dut.clock)
   await FallingEdge(dut.clock)
   dut.toaia_0_w_valid.value = 0
@@ -50,7 +50,7 @@ async def axi4_b_receive(dut):
   await with_timeout(RisingEdge(dut.toaia_0_b_valid), 5, "ns")
 async def axi4_ar_send(dut, addr, prot, size):
   await FallingEdge(dut.clock)
-  while not dut.toaia_0_ar_ready:
+  while not int(dut.toaia_0_ar_ready.value):
     await FallingEdge(dut.clock)
   dut.toaia_0_ar_valid.value = 1
   dut.toaia_0_ar_bits_addr.value = addr
@@ -91,7 +91,7 @@ async def axi4_read32(dut, addr):
 @cocotb.test()
 async def axi_simple_test(dut):
   # Start the clock
-  cocotb.start_soon(Clock(dut.clock, 1, units="ns").start())
+  cocotb.start_soon(Clock(dut.clock, 1, unit="ns").start())
   # Apply reset
   dut.reset.value = 1
   for _ in range(10):
