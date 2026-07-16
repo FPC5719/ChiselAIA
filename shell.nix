@@ -1,9 +1,14 @@
 let
   name = "ChiselAIA";
-  # pin nixpkgs to latest nixos-24.05
+  # main pkgs: nixos-24.05  -> cocotb stays 1.x
   pkgs = import (fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/ecbc1ca8ffd6aea8372ad16be9ebbb39889e55b6.tar.gz";
     sha256 = "0yfaybsa30zx4bm900hgn3hz92javlf4d47ahdaxj9fai00ddc1x";
+  }) {};
+  # newer nixpkgs ONLY for circt (chisel 7.x needs firtool 1.140.0)
+  pkgs_new = import (fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/8eeec934ae0dbeca3d7868c059568a65c08b2fc3.tar.gz";
+    sha256 = "1kfvsqfd4yss5a4c1vwri9x0d87vhg9vrw0j40xxwxfqvb59ndwl";
   }) {};
   my-python3 = pkgs.python3.withPackages (python-pkgs: [
     python-pkgs.cocotb
@@ -32,12 +37,25 @@ let
     rev = "bec9fa8279a23e387825b2a79b66ec77ed52220c";
     hash = "sha256-VzqERMEs/8dOz3n4YfNADLrdA2keqxUek62tqID9TnM=";
   }){};
+  # Mill standalone launcher that reads .mill-version (pinned to 0.12.17) and
+  # bootstraps the matching Mill binary into ~/.cache/mill/download.
+  mill-launcher = pkgs.runCommand "mill-launcher" {
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+  } ''
+    install -Dm755 ${pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/com-lihaoyi/mill/0.12.17/mill";
+      sha256 = "1bx2427ifirg1k2n150b1z9wddf5d74k31vh8j039h3004vwk6h9";
+    }} $out/bin/mill
+    wrapProgram $out/bin/mill --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.curl pkgs.coreutils pkgs.findutils pkgs.gnugrep pkgs.gnused ]}
+  '';
 in pkgs.mkShell {
   inherit name;
 
   buildInputs = [
     _h_
-    pkgs.mill
+    mill-launcher
+    pkgs.jdk
+    pkgs_new.circt
     pkgs.verilator
     pkgs.gtkwave
     my-python3
@@ -50,18 +68,13 @@ in pkgs.mkShell {
     markcode
   ];
 
-  shellHook = let
-    circt_1_62_0 = (import (pkgs.fetchFromGitHub {
-      owner = "NixOS";
-      repo = "nixpkgs";
-      rev = "771b079bb84ac2395f3a24a5663ac8d1495c98d3";
-      sha256 = "0l1l9ms78xd41xg768pkb6xym200zpf4zjbv4kbqbj3z7rzvhpb7";
-    }){}).circt;
-  in ''
-    export CHISEL_FIRTOOL_PATH=${circt_1_62_0}/bin/
+  shellHook = ''
+    export CHISEL_FIRTOOL_PATH=${pkgs_new.circt}/bin/
+    # Pin mill version for the standalone launcher (also inherited by server subprocesses)
+    export MILL_VERSION="''${MILL_VERSION:-$(cat .mill-version 2>/dev/null)}"
     export PYTHONPATH+=:${my-python3}/lib/${my-python3.libPrefix}/site-packages
     export PYTHONPATH+=:$(realpath ./test)
-    export LIBGL_ALWAYS_SOFTWARE = 1
+    export LIBGL_ALWAYS_SOFTWARE=1
     # To enable pdb when cocotb test failed
     export COCOTB_PDB_ON_EXCEPTION=1
     h
