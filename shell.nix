@@ -58,7 +58,6 @@ in pkgs.mkShell {
   ];
 
   shellHook = ''
-    export CHISEL_FIRTOOL_PATH=${pkgs.circt}/bin/
     export PYTHONPATH+=:${my-python3}/lib/${my-python3.libPrefix}/site-packages
     export PYTHONPATH+=:$(realpath ./test)
     export LIBGL_ALWAYS_SOFTWARE=1
