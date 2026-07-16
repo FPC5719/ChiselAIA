@@ -1,7 +1,12 @@
 let
   name = "ChiselAIA";
-  # pin nixpkgs to latest nixos-24.05
+  # main pkgs: nixos-26.05  -> cocotb 2.0.1, verilator 5.048, circt 1.140.0
   pkgs = import (fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/8eeec934ae0dbeca3d7868c059568a65c08b2fc3.tar.gz";
+    sha256 = "1kfvsqfd4yss5a4c1vwri9x0d87vhg9vrw0j40xxwxfqvb59ndwl";
+  }) {};
+  # old nixpkgs ONLY for mill (26.05's mill is too new for old build.sc's millbuild. prefix)
+  pkgs_old = import (fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/ecbc1ca8ffd6aea8372ad16be9ebbb39889e55b6.tar.gz";
     sha256 = "0yfaybsa30zx4bm900hgn3hz92javlf4d47ahdaxj9fai00ddc1x";
   }) {};
@@ -37,7 +42,9 @@ in pkgs.mkShell {
 
   buildInputs = [
     _h_
-    pkgs.mill
+    pkgs_old.mill
+    pkgs.jdk
+    pkgs.circt
     pkgs.verilator
     pkgs.gtkwave
     my-python3
@@ -50,18 +57,11 @@ in pkgs.mkShell {
     markcode
   ];
 
-  shellHook = let
-    circt_1_62_0 = (import (pkgs.fetchFromGitHub {
-      owner = "NixOS";
-      repo = "nixpkgs";
-      rev = "771b079bb84ac2395f3a24a5663ac8d1495c98d3";
-      sha256 = "0l1l9ms78xd41xg768pkb6xym200zpf4zjbv4kbqbj3z7rzvhpb7";
-    }){}).circt;
-  in ''
-    export CHISEL_FIRTOOL_PATH=${circt_1_62_0}/bin/
+  shellHook = ''
+    export CHISEL_FIRTOOL_PATH=${pkgs.circt}/bin/
     export PYTHONPATH+=:${my-python3}/lib/${my-python3.libPrefix}/site-packages
     export PYTHONPATH+=:$(realpath ./test)
-    export LIBGL_ALWAYS_SOFTWARE = 1
+    export LIBGL_ALWAYS_SOFTWARE=1
     # To enable pdb when cocotb test failed
     export COCOTB_PDB_ON_EXCEPTION=1
     h
